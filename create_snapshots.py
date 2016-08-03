@@ -1,100 +1,101 @@
 # Orignal code from:
 # https://serverlesscode.com/post/lambda-schedule-ebs-snapshot-backups/
 # http://blog.powerupcloud.com/2016/02/15/automate-ebs-snapshots-using-lambda-function/
+# Rewritten to take setting from Volumes, not Instances. Combined create and delete functionality
+# https://github.com/Brayyy/EBSSnapshotsLambda
 
 import boto3
 import collections
 import datetime
+import time
+import os
 
-#Please mention your region name
-#below line code is call cross region
-ec = boto3.client('ec2', region_name='ap-southeast-1')
+# Manually configure EC2 region, account IDs, timezone
+ec = boto3.client('ec2', region_name = 'us-east-1')
+aws_account_ids = ['0123456789012']
+default_days_of_renention = 7
+os.environ['TZ'] = 'US/Eastern'
 
+# Nothing to configure below this line
 
-def create_new_backups(event, context):
-    # mention your tag values below example "Backup-snap"
-    reservations = ec.describe_instances(
-        Filters=[
-            {'Name': 'tag-key', 'Values': ['Backup', 'Yes']},
+def create_new_backups():
+
+    # Current hour
+    current_hour = int(datetime.datetime.now().strftime('%H'))
+
+    # Find volumes tagged with key "Backup"
+    volumes = ec.describe_volumes(
+        Filters = [
+            { 'Name': 'tag-key', 'Values': ['Backup'] },
         ]
     ).get(
-        'Reservations', []
+       'Volumes', []
     )
 
-    instances = sum(
-        [
-            [i for i in r['Instances']]
-            for r in reservations
-        ], [])
-
-    print "Number of the Instances : %d" % len(instances)
+    print 'Number of the Volumes : %d' % len(volumes)
 
     to_tag = collections.defaultdict(list)
 
-    for instance in instances:
-        try:
-            retention_days = [
-                int(t.get('Value')) for t in instance['Tags']
-                if t['Key'] == 'Retention'][0]
-        except IndexError:
-            # Please give your retention period day
-            retention_days = 7
+    for volume in volumes:
+        vol_id              = volume['VolumeId']
+        vol_retention       = default_days_of_renention
+        snap_date           = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        snap_desc           = vol_id
 
-        for dev in instance['BlockDeviceMappings']:
-            if dev.get('Ebs', None) is None:
-                continue
-            vol_id = dev['Ebs']['VolumeId']
-            for name in instance['Tags']:
-                # To store the instance tag value
-                Instancename= name['Value']
-                # To store the instance key value
-                key= name['Key']
-                # Below the code is create Snapshot name as instance Name 
-                if key == 'Name' :
-                    ins_name = Instancename
-                    print "Found EBS volume %s on instance %s" % (
-                    vol_id, instance['InstanceId'])
-            
-            #To get all the instance tags deatils
-            for name in instance['Tags']:
-                # To store the instance tag value
-                Instancename= name['Value']
-                # To store the instance key value
-                key= name['Key']
-                # Below the code is create Snapshot name as instance Name 
-                if key == 'Name' :
-                    snap = ec.create_snapshot(
-                    VolumeId=vol_id,
-                    Description=Instancename,
-                    )
-                    print "snap %s" %snap
+        # Loop over all tags and grab out relevant keys
+        for name in volume['Tags']:
+          tag_key = name['Key']
+          tag_val = name['Value']
+          #print '...Found EBS volume key %s : %s ' % ( tag_key, tag_val );
 
-            to_tag[retention_days].append(snap['SnapshotId'])
+          # Below the code is create Snapshot name as instance Name 
+          if tag_key == 'Name' :
+            snap_desc = vol_id + ' (' + tag_val + ')'
 
-            print "Retaining snapshot %s of volume %s from instance %s for %d days" % (
-                snap['SnapshotId'],
-                vol_id,
-                instance['InstanceId'],
-                retention_days,
-                
-            )
-            for retention_days in to_tag.keys():
-                delete_date = datetime.date.today() + datetime.timedelta(days=retention_days)
-                snap = snap['Description'] + str('_')
-                # Here to get current date 
-                snapshot = snap + str(datetime.date.today())   
-                # to mention the current date formet
-                delete_fmt = delete_date.strftime('%Y-%m-%d')
-                print "Will delete %d snapshots on %s" % (len(to_tag[retention_days]), delete_fmt)
-                # below code is create the name and current date as instance name
-                ec.create_tags(
-                Resources=to_tag[retention_days],
-                Tags=[
-                {'Key': 'DeleteOn', 'Value': delete_fmt},
-                {'Key': 'Name', 'Value': snapshot },
-                ]
-                ) 
-        to_tag.clear()
+          if tag_key == 'Retention' :
+            vol_retention = int(tag_val);
+
+          if tag_key == 'Backup' :
+            if   tag_val == 'true':    backup_mod = 24
+            elif tag_val == 'daily':   backup_mod = 24
+            elif tag_val == '1/day':   backup_mod = 24
+            elif tag_val == '2/day':   backup_mod = 12
+            elif tag_val == '4/day':   backup_mod = 6
+            elif tag_val == '6/day':   backup_mod = 4
+            elif tag_val == '8/day':   backup_mod = 3
+            elif tag_val == '12/day':  backup_mod = 2
+            elif tag_val == '24/day':  backup_mod = 1
+            elif tag_val == 'hourly':  backup_mod = 1
+            else:
+              print 'Warning: unknown backup schedule %s' % tag_val
+              continue
+
+        snap_name = 'Backup of ' + snap_desc
+        snap_desc = 'Lambda backup ' + snap_date + ' of ' + snap_desc
+        delete_ts = '%.0f' % ( (vol_retention * 86400) + time.time() )
+
+        # Only backup if scheduled to do so
+        if current_hour % backup_mod != 0:
+          print '%s is not scheduled this hour' % vol_id
+          continue
+        else:
+          print '%s is scheduled this hour' % vol_id
+
+        # Create snapshot
+        snap = ec.create_snapshot(
+          VolumeId = vol_id,
+          Description = snap_desc,
+        )
+
+        print 'snap %s' %snap
+
+        ec.create_tags(
+          Resources = [ snap['SnapshotId'] ],
+          Tags = [
+            {'Key': 'Name', 'Value': snap_name},
+            {'Key': 'DeleteAfter', 'Value': str(delete_ts) }
+          ]
+        )
 
 def destroy_old_backups():
   # TODO
