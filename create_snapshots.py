@@ -1,3 +1,7 @@
+# Orignal code from:
+# https://serverlesscode.com/post/lambda-schedule-ebs-snapshot-backups/
+# http://blog.powerupcloud.com/2016/02/15/automate-ebs-snapshots-using-lambda-function/
+
 import boto3
 import collections
 import datetime
@@ -6,8 +10,8 @@ import datetime
 #below line code is call cross region
 ec = boto3.client('ec2', region_name='ap-southeast-1')
 
-#begins lambda function
-def lambda_handler(event, context):
+
+def create_new_backups(event, context):
     # mention your tag values below example "Backup-snap"
     reservations = ec.describe_instances(
         Filters=[
@@ -91,3 +95,10 @@ def lambda_handler(event, context):
                 ]
                 ) 
         to_tag.clear()
+
+def destroy_old_backups():
+  # TODO
+
+def lambda_handler(event, context):
+    create_new_backups()
+    return 'successful'
