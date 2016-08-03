@@ -2,7 +2,7 @@
 # https://serverlesscode.com/post/lambda-schedule-ebs-snapshot-backups/
 # http://blog.powerupcloud.com/2016/02/15/automate-ebs-snapshots-using-lambda-function/
 # Rewritten to take setting from Volumes, not Instances. Combined create and delete functionality
-# https://github.com/Brayyy/EBSSnapshotsLambda
+# https://github.com/Brayyy/Lambda-EBS-Snapshot-Manager
 
 import boto3
 import collections
@@ -52,7 +52,7 @@ def create_new_backups():
           if tag_key == 'Name' :
             snap_desc = vol_id + ' (' + tag_val + ')'
 
-          if tag_key == 'Retention' :
+          if tag_key == 'Retention' and tag_key.isdigit():
             vol_retention = int(tag_val);
 
           if tag_key == 'Backup' :
