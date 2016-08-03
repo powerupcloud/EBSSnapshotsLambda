@@ -10,6 +10,8 @@ A simple Lambda script to schedule creation and clearing of EBS snapshots.
 
 Valid values for "Backup" key: true, daily, 1/day, 2/day, 4/day, 6/day, 8/day, 12/day, 24/day, hourly
 
+![EBS Volume tagging example](/example-tagged-volume.png)
+
 Lambda config:
 - Runtime: Python 2.7
 - Handler: lambda_function.lambda_handler

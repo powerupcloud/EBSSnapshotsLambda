@@ -1,7 +1,7 @@
-# Orignal code from:
+# Original code from:
 # https://serverlesscode.com/post/lambda-schedule-ebs-snapshot-backups/
 # http://blog.powerupcloud.com/2016/02/15/automate-ebs-snapshots-using-lambda-function/
-# Rewritten to take setting from Volumes, not Instances. Combined create and delete functionality
+# Rewritten to be configured on individual Volumes, not Instances. Combined create and delete functionality
 # https://github.com/Brayyy/Lambda-EBS-Snapshot-Manager
 
 import boto3
