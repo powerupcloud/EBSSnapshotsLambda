@@ -12,7 +12,7 @@ import os
 
 # Manually configure EC2 region, account IDs, timezone
 ec = boto3.client('ec2', region_name = 'us-east-1')
-aws_account_ids = ['0123456789012']
+aws_account_ids = ['123456789012']
 default_days_of_renention = 7
 os.environ['TZ'] = 'US/Eastern'
 
@@ -98,8 +98,30 @@ def create_new_backups():
         )
 
 def destroy_old_backups():
-  # TODO
+    filters = [
+        {'Name': 'tag-key', 'Values': ['DeleteAfter']}
+    ]
+    snapshot_response = ec.describe_snapshots(
+      OwnerIds = aws_account_ids,
+      Filters = filters
+    )
+    #print snapshot_response
+
+    for snap in snapshot_response['Snapshots']:
+      # Loop over all tags and grab out relevant keys
+      for name in snap['Tags']:
+        tag_key = name['Key']
+        tag_val = name['Value']
+        #print '...Found EBS volume key %s : %s ' % ( tag_key, tag_val );
+
+        if name['Key'] == 'DeleteAfter':
+          if int(name['Value']) < time.time():
+            print '%s is being deleted' % snap['SnapshotId']
+            ec.delete_snapshot(SnapshotId = snap['SnapshotId'])
+          else:
+            print '%s is safe.' % snap['SnapshotId']
 
 def lambda_handler(event, context):
     create_new_backups()
+    destroy_old_backups()
     return 'successful'
