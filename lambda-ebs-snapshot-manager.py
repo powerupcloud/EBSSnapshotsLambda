@@ -52,7 +52,7 @@ def create_new_backups():
           if tag_key == 'Name' :
             snap_desc = vol_id + ' (' + tag_val + ')'
 
-          if tag_key == 'Retention' and tag_key.isdigit():
+          if tag_key == 'Retention' and tag_val.isdigit():
             vol_retention = int(tag_val);
 
           if tag_key == 'Backup' :
