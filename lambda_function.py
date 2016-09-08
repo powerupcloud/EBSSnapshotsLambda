@@ -1,7 +1,7 @@
 # Original code from:
 # https://serverlesscode.com/post/lambda-schedule-ebs-snapshot-backups/
 # http://blog.powerupcloud.com/2016/02/15/automate-ebs-snapshots-using-lambda-function/
-# Rewritten to be configured on individual Volumes, not Instances. Combined create and delete functionality
+# Rewritten to be configured on individual Volumes, not Instances.
 # https://github.com/Brayyy/Lambda-EBS-Snapshot-Manager
 
 import boto3
@@ -32,7 +32,7 @@ def create_new_backups():
        'Volumes', []
     )
 
-    print 'Number of the Volumes : %d' % len(volumes)
+    print 'Number of volumes with backup tag: %d' % len(volumes)
 
     for volume in volumes:
         vol_id = volume['VolumeId']
@@ -54,7 +54,11 @@ def create_new_backups():
                 vol_retention = int(tag_val)
 
             if tag_key == 'Backup':
-                if tag_val == 'true':
+                if tag_val == '':
+                    continue
+                elif tag_val == 'false':
+                    continue
+                elif tag_val == 'true':
                     backup_mod = 24
                 elif tag_val == 'daily':
                     backup_mod = 24
@@ -75,7 +79,7 @@ def create_new_backups():
                 elif tag_val == 'hourly':
                     backup_mod = 1
                 else:
-                    print 'Warning: unknown backup schedule %s' % tag_val
+                    print '%s unknown backup schedule %s' % (vol_id, tag_val)
                     continue
 
         snap_name = 'Backup of ' + snap_desc
