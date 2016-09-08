@@ -53,11 +53,10 @@ def create_new_backups():
             if tag_key == 'Retention' and tag_val.isdigit():
                 vol_retention = int(tag_val)
 
+            backup_mod = False
             if tag_key == 'Backup':
-                if tag_val == '':
-                    continue
-                elif tag_val == 'false':
-                    continue
+                if tag_val == '' or tag_val == 'false':
+                    backup_mod = False
                 elif tag_val == 'true':
                     backup_mod = 24
                 elif tag_val == 'daily':
@@ -87,7 +86,7 @@ def create_new_backups():
         delete_ts = '%.0f' % ((vol_retention * 86400) + time.time())
 
         # Only backup if scheduled to do so
-        if current_hour % backup_mod != 0:
+        if backup_mod is False or current_hour % backup_mod != 0:
             print '%s is not scheduled this hour' % vol_id
             continue
         else:
