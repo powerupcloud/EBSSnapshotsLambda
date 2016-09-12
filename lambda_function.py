@@ -53,8 +53,8 @@ def create_new_backups():
             if tag_key == 'Retention' and tag_val.isdigit():
                 vol_retention = int(tag_val)
 
-            backup_mod = False
             if tag_key == 'Backup':
+                backup_mod = False
                 if tag_val == '' or tag_val == 'false':
                     backup_mod = False
                 elif tag_val == 'true':
