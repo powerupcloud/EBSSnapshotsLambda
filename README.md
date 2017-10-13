@@ -20,6 +20,8 @@ Lambda config:
 - Timeout: 5 sec
 - Add a trigger using "CloudWatch Events - Schedule", set for "rate(1 hour)"
 - Environment variables
+  - `BACKUP_KEY`: Optional. Override EBS Tag key for configuring backup. Default "Backup".
+  - `RETENTION_KEY`: Optional. Override EBS Tag key for configuring retention. Default "Retention".
   - `RETENTION_DEFAULT`: Optional. Number of days to retain snapshots. Default 7 days.
   - `TIME_ZONE`: Optional. Python formatted timezone. Default "US/Eastern".
   - `AWS_REGION`: Optional. AWS region where backup is taking place. Default "us-east-1"

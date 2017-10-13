@@ -13,6 +13,8 @@ import os
 RETENTION_DEFAULT = 7
 TIME_ZONE = 'US/Eastern'
 AWS_REGION = 'us-east-1'
+BACKUP_KEY = 'Backup'
+RETENTION_KEY = 'Retention'
 
 if 'RETENTION_DEFAULT' in os.environ:
     RETENTION_DEFAULT = int(os.environ['RETENTION_DEFAULT'])
@@ -20,6 +22,10 @@ if 'TIME_ZONE' in os.environ:
     TIME_ZONE = os.environ['TIME_ZONE']
 if 'AWS_REGION' in os.environ:
     AWS_REGION = os.environ['AWS_REGION']
+if 'BACKUP_KEY' in os.environ:
+    BACKUP_KEY = os.environ['BACKUP_KEY']
+if 'RETENTION_KEY' in os.environ:
+    RETENTION_KEY = os.environ['RETENTION_KEY']
 
 EC2_CLIENT = boto3.client('ec2', region_name=AWS_REGION)
 os.environ['TZ'] = TIME_ZONE
@@ -33,7 +39,7 @@ def create_new_backups():
     # Find volumes tagged with key "Backup"
     volumes = EC2_CLIENT.describe_volumes(
         Filters=[
-            {'Name': 'tag-key', 'Values': ['Backup']},
+            {'Name': 'tag-key', 'Values': [BACKUP_KEY]},
         ]
     ).get(
         'Volumes', []
@@ -57,10 +63,10 @@ def create_new_backups():
             if tag_key == 'Name':
                 snap_desc = vol_id + ' (' + tag_val + ')'
 
-            if tag_key == 'Retention' and tag_val.isdigit():
+            if tag_key == RETENTION_KEY and tag_val.isdigit():
                 vol_retention = int(tag_val)
 
-            if tag_key == 'Backup':
+            if tag_key == BACKUP_KEY:
                 backup_mod = False
                 if tag_val == '' or tag_val == 'false':
                     backup_mod = False
