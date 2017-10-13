@@ -9,9 +9,8 @@ import datetime
 import time
 import os
 
-# Manually configure EC2 region, account IDs, timezone
+# Manually configure EC2 region, timezone
 ec = boto3.client('ec2', region_name='us-east-1')
-aws_account_ids = ['123456789012']
 default_days_of_renention = 7
 os.environ['TZ'] = 'US/Eastern'
 
@@ -109,10 +108,11 @@ def create_new_backups():
         )
 
 
-def destroy_old_backups():
+def destroy_old_backups(aws_account_ids):
     filters = [
         {'Name': 'tag-key', 'Values': ['DeleteAfter']}
     ]
+    print 'Using aws_account_ids: %s ' % aws_account_ids
     snapshot_response = ec.describe_snapshots(
       OwnerIds=aws_account_ids,
       Filters=filters
@@ -135,6 +135,13 @@ def destroy_old_backups():
 
 
 def lambda_handler(event, context):
+    # Get Account ID from context
+    aws_account_ids = [context.invoked_function_arn.split(":")[4]]
+    # Account ID can also be set by environment variable
+    if 'AWS_ACCOUNT_IDS' in os.environ:
+        aws_account_ids = os.environ['AWS_ACCOUNT_IDS']
+        aws_account_ids = aws_account_ids.replace(' ', '').split(',')
+
     create_new_backups()
-    destroy_old_backups()
+    destroy_old_backups(aws_account_ids)
     return 'successful'

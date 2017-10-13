@@ -19,6 +19,8 @@ Lambda config:
 - Memory: 128
 - Timeout: 5 sec
 - Add a trigger using "CloudWatch Events - Schedule", set for "rate(1 hour)"
+- Environment variables
+  - `AWS_ACCOUNT_IDS`: List of AWS account ids which to check for snapshots to purge
 
 IAM Lambda Role:
 ```
