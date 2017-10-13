@@ -14,7 +14,7 @@ Valid values for "Backup" key: true, daily, 1/day, 2/day, 4/day, 6/day, 8/day, 1
 
 Lambda config:
 - Runtime: Python 2.7
-- Handler: lambda_function.lambda_handler
+- Handler: lambda-ebs-snapshot-manager.lambda_handler
 - Role: [role as specified below]
 - Memory: 128
 - Timeout: 5 sec
