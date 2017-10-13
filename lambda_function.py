@@ -10,8 +10,8 @@ import time
 import os
 
 # Manually configure EC2 region, timezone
-ec = boto3.client('ec2', region_name='us-east-1')
-default_days_of_renention = 7
+EC2_CLIENT = boto3.client('ec2', region_name='us-east-1')
+RETENTION_DEFAULT = 7
 os.environ['TZ'] = 'US/Eastern'
 
 # Nothing to configure below this line
@@ -23,7 +23,7 @@ def create_new_backups():
     current_hour = int(datetime.datetime.now().strftime('%H'))
 
     # Find volumes tagged with key "Backup"
-    volumes = ec.describe_volumes(
+    volumes = EC2_CLIENT.describe_volumes(
         Filters=[
             {'Name': 'tag-key', 'Values': ['Backup']},
         ]
@@ -35,7 +35,7 @@ def create_new_backups():
 
     for volume in volumes:
         vol_id = volume['VolumeId']
-        vol_retention = default_days_of_renention
+        vol_retention = RETENTION_DEFAULT
         snap_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         snap_desc = vol_id
 
@@ -92,14 +92,14 @@ def create_new_backups():
             print '%s is scheduled this hour' % vol_id
 
         # Create snapshot
-        snap = ec.create_snapshot(
+        snap = EC2_CLIENT.create_snapshot(
           VolumeId=vol_id,
           Description=snap_desc,
         )
 
         print 'snap %s' % snap
 
-        ec.create_tags(
+        EC2_CLIENT.create_tags(
           Resources=[snap['SnapshotId']],
           Tags=[
             {'Key': 'Name', 'Value': snap_name},
@@ -113,7 +113,7 @@ def destroy_old_backups(aws_account_ids):
         {'Name': 'tag-key', 'Values': ['DeleteAfter']}
     ]
     print 'Using aws_account_ids: %s ' % aws_account_ids
-    snapshot_response = ec.describe_snapshots(
+    snapshot_response = EC2_CLIENT.describe_snapshots(
       OwnerIds=aws_account_ids,
       Filters=filters
     )
@@ -129,7 +129,7 @@ def destroy_old_backups(aws_account_ids):
             if tag_key == 'DeleteAfter':
                 if int(tag_val) < time.time():
                     print '%s is being deleted' % snap['SnapshotId']
-                    ec.delete_snapshot(SnapshotId=snap['SnapshotId'])
+                    EC2_CLIENT.delete_snapshot(SnapshotId=snap['SnapshotId'])
                 else:
                     print '%s is safe.' % snap['SnapshotId']
 
