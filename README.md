@@ -20,7 +20,9 @@ Lambda config:
 - Timeout: 5 sec
 - Add a trigger using "CloudWatch Events - Schedule", set for "rate(1 hour)"
 - Environment variables
-  - `AWS_ACCOUNT_IDS`: List of AWS account ids which to check for snapshots to purge
+  - `RETENTION_DEFAULT`: Optional. Number of days to retain snapshots. Default 7 days.
+  - `TIME_ZONE`: Optional. Python formatted timezone. Default "US/Eastern".
+  - `AWS_REGION`: Optional. AWS region where backup is taking place. Default "us-east-1"
 
 IAM Lambda Role:
 ```

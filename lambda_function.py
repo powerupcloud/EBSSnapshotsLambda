@@ -9,12 +9,20 @@ import datetime
 import time
 import os
 
-# Manually configure EC2 region, timezone
-EC2_CLIENT = boto3.client('ec2', region_name='us-east-1')
+# Defaults
 RETENTION_DEFAULT = 7
-os.environ['TZ'] = 'US/Eastern'
+TIME_ZONE = 'US/Eastern'
+AWS_REGION = 'us-east-1'
 
-# Nothing to configure below this line
+if 'RETENTION_DEFAULT' in os.environ:
+    RETENTION_DEFAULT = int(os.environ['RETENTION_DEFAULT'])
+if 'TIME_ZONE' in os.environ:
+    TIME_ZONE = os.environ['TIME_ZONE']
+if 'AWS_REGION' in os.environ:
+    AWS_REGION = os.environ['AWS_REGION']
+
+EC2_CLIENT = boto3.client('ec2', region_name=AWS_REGION)
+os.environ['TZ'] = TIME_ZONE
 
 
 def create_new_backups():
@@ -28,7 +36,7 @@ def create_new_backups():
             {'Name': 'tag-key', 'Values': ['Backup']},
         ]
     ).get(
-       'Volumes', []
+        'Volumes', []
     )
 
     print 'Number of volumes with backup tag: %d' % len(volumes)
@@ -93,18 +101,18 @@ def create_new_backups():
 
         # Create snapshot
         snap = EC2_CLIENT.create_snapshot(
-          VolumeId=vol_id,
-          Description=snap_desc,
+            VolumeId=vol_id,
+            Description=snap_desc,
         )
 
         print 'snap %s' % snap
 
         EC2_CLIENT.create_tags(
-          Resources=[snap['SnapshotId']],
-          Tags=[
-            {'Key': 'Name', 'Value': snap_name},
-            {'Key': 'DeleteAfter', 'Value': str(delete_ts)}
-          ]
+            Resources=[snap['SnapshotId']],
+            Tags=[
+                {'Key': 'Name', 'Value': snap_name},
+                {'Key': 'DeleteAfter', 'Value': str(delete_ts)}
+            ]
         )
 
 
@@ -112,10 +120,10 @@ def destroy_old_backups(aws_account_ids):
     filters = [
         {'Name': 'tag-key', 'Values': ['DeleteAfter']}
     ]
-    print 'Using aws_account_ids: %s ' % aws_account_ids
+    # print 'aws_account_ids: %s ' % aws_account_ids
     snapshot_response = EC2_CLIENT.describe_snapshots(
-      OwnerIds=aws_account_ids,
-      Filters=filters
+        OwnerIds=aws_account_ids,
+        Filters=filters
     )
     # print snapshot_response
 
@@ -137,10 +145,6 @@ def destroy_old_backups(aws_account_ids):
 def lambda_handler(event, context):
     # Get Account ID from context
     aws_account_ids = [context.invoked_function_arn.split(":")[4]]
-    # Account ID can also be set by environment variable
-    if 'AWS_ACCOUNT_IDS' in os.environ:
-        aws_account_ids = os.environ['AWS_ACCOUNT_IDS']
-        aws_account_ids = aws_account_ids.replace(' ', '').split(',')
 
     create_new_backups()
     destroy_old_backups(aws_account_ids)
