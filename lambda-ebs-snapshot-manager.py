@@ -111,7 +111,7 @@ def create_new_backups():
             Description=snap_desc,
         )
 
-        print 'snap %s' % snap
+        print '%s created' % snap['SnapshotId']
 
         EC2_CLIENT.create_tags(
             Resources=[snap['SnapshotId']],
