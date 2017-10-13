@@ -10,9 +10,10 @@ A simple Lambda script to schedule creation and clearing of EBS snapshots.
 
 Valid values for "Backup" key: true, daily, 1/day, 2/day, 4/day, 6/day, 8/day, 12/day, 24/day, hourly
 
-![EBS Volume tagging example](/example-tagged-volume.png)
+![EBS Volume tagging example](./example-tagged-volume.png)
 
 Lambda config:
+
 - Runtime: Python 2.7
 - Handler: lambda-ebs-snapshot-manager.lambda_handler
 - Role: [role as specified below]
@@ -20,14 +21,17 @@ Lambda config:
 - Timeout: 5 sec
 - Add a trigger using "CloudWatch Events - Schedule", set for "rate(1 hour)"
 - Environment variables
-  - `BACKUP_KEY`: Optional. Override EBS Tag key for configuring backup. Default "Backup".
-  - `RETENTION_KEY`: Optional. Override EBS Tag key for configuring retention. Default "Retention".
-  - `RETENTION_DEFAULT`: Optional. Number of days to retain snapshots. Default 7 days.
-  - `TIME_ZONE`: Optional. Python formatted timezone. Default "US/Eastern".
-  - `AWS_REGION`: Optional. AWS region where backup is taking place. Default "us-east-1"
+  - **BACKUP_KEY**: Optional. Override EBS Tag key for configuring backup. Default is "Backup".
+  - **RETENTION_KEY**: Optional. Override EBS Tag key for configuring retention. Default is "Retention".
+  - **RETENTION_DEFAULT**: Optional. Number of days to retain snapshots. Default is 7 days.
+  - **TIME_ZONE**: Optional. Python formatted timezone. Default is "US/Eastern".
+  - **AWS_REGION**: Optional. AWS region where backup is taking place. Default "us-east-1"
+
+---
 
 IAM Lambda Role:
-```
+
+```json
 {
     "Version": "2012-10-17",
     "Statement": [
